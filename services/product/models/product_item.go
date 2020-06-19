@@ -5,7 +5,7 @@ import (
 	"math"
 )
 
-type CatalogItem struct {
+type ProductItem struct {
 	Id int
 	Name string
 	Description string
@@ -13,15 +13,15 @@ type CatalogItem struct {
 	PictureFileName string
 	PictureUri string
 	CatalogTypeId int
-	CatalogType CatalogType
-	CatalogBrand CatalogBrand
+	CatalogType ProductType
+	CatalogBrand ProductBrand
 	AvailableStock int
 	RestockThreshold int
 	MaxStockThreshold int
 	OnReorder bool
 }
 
-func (ci CatalogItem) RemoveStock(quantityDesired int) (int,error){
+func (ci ProductItem) RemoveStock(quantityDesired int) (int,error){
 	if ci.AvailableStock == 0 {
 		return 0,errors.New("Empty stock, product item "+ci.Name+" is sold out")
 	}
@@ -33,7 +33,7 @@ func (ci CatalogItem) RemoveStock(quantityDesired int) (int,error){
 	return int(removed),nil
 }
 
-func (ci CatalogItem) AddStock(quantity int) int{
+func (ci ProductItem) AddStock(quantity int) int{
 	original := ci.AvailableStock
 	if (ci.AvailableStock+quantity) > ci.MaxStockThreshold {
 		ci.AvailableStock += (ci.MaxStockThreshold - ci.AvailableStock)

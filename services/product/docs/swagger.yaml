@@ -1,0 +1,34 @@
+basePath: /api/v1
+host: localhost:8080
+info:
+  contact: {}
+  description: This is Catalog service
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Catalog Swagger API
+  version: "1.0"
+paths:
+  /catalog/items:
+    get:
+      consumes:
+      - application/json
+      description: Get all catalogs
+      parameters:
+      - description: it's page size
+        in: query
+        name: size
+        required: true
+        type: integer
+      - description: it's page index
+        in: query
+        name: pageIndex
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200": {}
+      summary: Get all catalogs
+swagger: "2.0"

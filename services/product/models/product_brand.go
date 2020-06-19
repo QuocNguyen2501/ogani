@@ -1,6 +1,6 @@
 package models
 
-type CatalogBrand struct{
+type ProductBrand struct{
 	Id int
 	Brand string
 }
