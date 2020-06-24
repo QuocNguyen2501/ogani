@@ -1,6 +1,9 @@
 package models
 
+import "github.com/jinzhu/gorm"
+
 type ProductBrand struct{
-	Id int
-	Brand string
+	gorm.Model
+	Id int `gorm:"PRIMARY_KEY;AUTO_INCREMENT"`
+	Brand string `gorm:"size:125;not null"`
 }

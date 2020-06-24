@@ -2,23 +2,26 @@ package models
 
 import (
 	"errors"
+	"github.com/jinzhu/gorm"
 	"math"
 )
 
 type ProductItem struct {
-	Id int
-	Name string
-	Description string
-	Price float32
-	PictureFileName string
-	PictureUri string
-	CatalogTypeId int
-	CatalogType ProductType
-	CatalogBrand ProductBrand
-	AvailableStock int
-	RestockThreshold int
-	MaxStockThreshold int
-	OnReorder bool
+	gorm.Model
+	Id                int `gorm:"PRIMARY_KEY;AUTO_INCREMENT"`
+	Name              string `gorm:"size:125;not null"`
+	Description       string `gorm:"size:255"`
+	Price             float32 `gorm:"not null"`
+	PictureFileName   string `gorm:"not null"`
+	PictureUri        string `gorm:"not null"`
+	ProductTypeId     int `gorm:"not null"`
+	ProductType       ProductType `gorm:"not null"`
+	ProductBrandId     int `gorm:"not null"`
+	ProductBrand      ProductBrand `gorm:"not null"`
+	AvailableStock    int `gorm:"not null"`
+	RestockThreshold  int `gorm:"not null"`
+	MaxStockThreshold int `gorm:"not null"`
+	OnReorder         bool `gorm:"not null"`
 }
 
 func (ci ProductItem) RemoveStock(quantityDesired int) (int,error){
