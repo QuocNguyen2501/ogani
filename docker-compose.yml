@@ -1,0 +1,52 @@
+version: '3.3'
+#services describe the containers that will start
+services: 
+    # product is the container name for our Go API
+    product-api:
+        # It will look for a dockerfile in the project root and build it
+        build: "./services/product"
+        # Exposes the port 5000 from a container and binds it to a random port
+        ports:
+            - "5000"
+        # If the container goes down, it will restart
+        restart: "always"
+        # Connects the API to a common ogani.network bridge
+        networks: 
+            - "ogani.network"
+        # Starts up 5 replicas of the same image
+        deploy:
+            replicas: 5
+    
+    webmvc:
+        # It will look for a dockerfile in the project root and build it
+        build: "./webapps/webmvc"
+        # Exposes the port 4200 from a container and binds it to a random port
+        ports:
+            - "4200:4200"
+        # If the container goes down, it will restart
+        restart: "always"
+        # It will start up the nginx only when all api containers have started
+        depends_on:
+            - product-api
+        # Connects the API to a common ogani.network bridge
+        networks: 
+            - "ogani.network"
+
+    # nginx container
+    nginx:
+        # specifies the latest nginx image
+        image: nginx:latest
+        # Connects the conf file of the container to the conf file in our folder
+        volumes:
+            - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+        # It will start up the nginx only when all api containers have started
+        depends_on:
+            - product-api
+        # Connects the port 80 of the nginx container to localhost:80 or localhost
+        ports:
+            - "80:80"
+        networks: 
+            - "ogani.network"
+# declares network used to connect all the apps
+networks: 
+    ogani.network:

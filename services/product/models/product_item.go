@@ -46,3 +46,7 @@ func (ci ProductItem) AddStock(quantity int) int{
 	ci.OnReorder = false
 	return ci.AvailableStock - original
 }
+
+func (ci ProductItem) FillProductUrl(picBaseUrl string){
+	// do something get base url
+}

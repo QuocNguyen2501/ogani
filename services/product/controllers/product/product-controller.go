@@ -35,11 +35,9 @@ func Items(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db,err := gorm.Open("postgres", "host=0.0.0.0 port=5432 user=postgres dbname=ogani password=postgres sslmode=disable")
+	db := connectDbHandler()
 	defer db.Close()
-	if err != nil {
-		panic(err)
-	}
+
 	totalItemsCh := make(chan int)
 	go func(){
 		var _totalItems = 0
@@ -61,11 +59,36 @@ func Items(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(itemsOnPage)
+	json.NewEncoder(w).Encode(struct {
+		pageIndex int
+		pageSize int
+		totalItems int
+		itemsOnPage []models.ProductItem
+	}{
+		pageIndex: pageIndex,
+		pageSize: pageSize,
+		totalItems: totalItems,
+		itemsOnPage: itemsOnPage,
+	})
 }
 
 func ItemById(w http.ResponseWriter, r *http.Request) {
+	id, err :=  strconv.Atoi(r.URL.Query().Get("id"))
+	if err != nil {
+		badRequest(w)
+		return
+	}
+
+	db := connectDbHandler()
+	defer db.Close()
+
+	var product models.ProductItem
+	db.Model(&models.ProductItem{}).Where("id = ?", id).Find(&product)
+
+	product.FillProductUrl("base url")
+
 	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(product)
 }
 
 func ItemsWithName(w http.ResponseWriter, r *http.Request) {
@@ -103,4 +126,12 @@ func DeleteProduct(w http.ResponseWriter, r *http.Request) {
 func badRequest(w http.ResponseWriter){
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusBadRequest)
+}
+
+func connectDbHandler() *gorm.DB{
+	db, err := gorm.Open("postgres","host=0.0.0.0 port=5432 user=postgres dbname=ogani password=postgres sslmode=disable")
+	if err != nil{
+		panic(err)
+	}
+	return db
 }
