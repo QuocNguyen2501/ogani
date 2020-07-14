@@ -3,6 +3,7 @@ package productController
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
 	"log"
 	"net/http"
@@ -88,11 +89,47 @@ func ItemById(w http.ResponseWriter, r *http.Request) {
 	product.FillProductUrl("base url")
 
 	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(product)
 }
 
 func ItemsWithName(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	pageSize,err := strconv.Atoi(r.URL.Query().Get("pageSize"))
+	if err !=nil{
+		log.Fatalln(err)
+		badRequest(w)
+		return
+	}
+
+	pageIndex, err := strconv.Atoi(r.URL.Query().Get("pageIndex"))
+	if err !=nil{
+		log.Fatalln(err)
+		badRequest(w)
+		return
+	}
+
+	db:= connectDbHandler()
+
+	totalItems := 0
+	db.Model(&models.ProductItem{}).Where("name LIKE %?",vars["name"]).Count(totalItems)
+
+	var itemsOnPage []models.ProductItem
+	db.Model(&models.ProductItem{}).Order("name asc").Offset(pageIndex * pageSize).Limit(pageSize).Find(itemsOnPage)
+
 	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(struct {
+		pageIndex int
+		pageSize int
+		totalItems int
+		itemsOnPage []models.ProductItem
+	}{
+		pageIndex: pageIndex,
+		pageSize: pageSize,
+		totalItems: totalItems,
+		itemsOnPage: itemsOnPage,
+	})
 }
 
 func ItemsByTypeIdAndBrandId(w http.ResponseWriter, r *http.Request) {

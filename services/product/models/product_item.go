@@ -8,16 +8,15 @@ import (
 
 type ProductItem struct {
 	gorm.Model
-	Id                int `gorm:"PRIMARY_KEY;AUTO_INCREMENT"`
 	Name              string `gorm:"size:125;not null"`
 	Description       string `gorm:"size:255"`
 	Price             float32 `gorm:"not null"`
 	PictureFileName   string `gorm:"not null"`
 	PictureUri        string `gorm:"not null"`
 	ProductTypeId     int `gorm:"not null"`
-	ProductType       ProductType `gorm:"not null"`
+	ProductType       ProductType `gorm:"not null;association_autoupdate:false;association_autocreate:false"`
 	ProductBrandId     int `gorm:"not null"`
-	ProductBrand      ProductBrand `gorm:"not null"`
+	ProductBrand      ProductBrand `gorm:"not null;association_autoupdate:false;association_autocreate:false"`
 	AvailableStock    int `gorm:"not null"`
 	RestockThreshold  int `gorm:"not null"`
 	MaxStockThreshold int `gorm:"not null"`

@@ -8,8 +8,8 @@ require (
 	github.com/go-openapi/spec v0.19.8 // indirect
 	github.com/go-openapi/swag v0.19.9 // indirect
 	github.com/gorilla/context v1.1.1 // indirect
-	github.com/gorilla/mux v1.7.4 // indirect
-	github.com/jinzhu/gorm v1.9.14 // indirect
+	github.com/gorilla/mux v1.7.4
+	github.com/jinzhu/gorm v1.9.14
 	github.com/mailru/easyjson v0.7.1 // indirect
 	github.com/swaggo/http-swagger v0.0.0-20200308142732-58ac5e232fba // indirect
 	github.com/swaggo/swag v1.6.7
