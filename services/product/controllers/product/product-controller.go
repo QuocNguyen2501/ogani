@@ -1,12 +1,9 @@
 package productController
 
 import (
-	"encoding/json"
-	"fmt"
-	"github.com/gorilla/mux"
+	"github.com/gofiber/fiber"
 	"github.com/jinzhu/gorm"
 	"log"
-	"net/http"
 	"ogani.com/services/product/models"
 	"strconv"
 )
@@ -16,23 +13,23 @@ import (
 // @Description Get all catalogs
 // @Accept json
 // @Produce json
-// @Param  size query int true "it's page size"
+// @Param  pageSize query int true "it's page size"
 // @Param  pageIndex query int true "it's page index"
 // @Success 200
 // @BadRequest 400
 // @Router /product/items [get]
-func Items(w http.ResponseWriter, r *http.Request) {
-	pageSize,err := strconv.Atoi(r.URL.Query().Get("pageSize"))
+func Items(c *fiber.Ctx) {
+	pageSize,err := strconv.Atoi(c.Query("pageSize","10"))
 	if err !=nil{
 		log.Fatalln(err)
-		badRequest(w)
+		c.Next(err)
 		return
 	}
 
-	pageIndex, err := strconv.Atoi(r.URL.Query().Get("pageIndex"))
+	pageIndex, err := strconv.Atoi(c.Query("pageIndex","0"))
 	if err !=nil{
 		log.Fatalln(err)
-		badRequest(w)
+		c.Next(err)
 		return
 	}
 
@@ -42,25 +39,20 @@ func Items(w http.ResponseWriter, r *http.Request) {
 	totalItemsCh := make(chan int)
 	go func(){
 		var _totalItems = 0
-		db.Model(&models.ProductItem{}).Count(_totalItems)
+		db.Model(&models.ProductItem{}).Count(&_totalItems)
 		totalItemsCh <- _totalItems
 	}()
 	itemsOnPageCh := make(chan []models.ProductItem)
 	go func() {
 		var _itemsOnPage []models.ProductItem
-		db.Model(&models.ProductItem{}).Order("name asc").Offset(pageIndex * pageSize).Limit(pageSize).Find(_itemsOnPage)
+		db.Model(&models.ProductItem{}).Order("name asc").Offset(pageIndex * pageSize).Limit(pageSize).Find(&_itemsOnPage)
 		itemsOnPageCh <- _itemsOnPage
 	}()
 
 	totalItems := <-totalItemsCh
 	itemsOnPage := <- itemsOnPageCh
 
-	fmt.Println(totalItems)
-	fmt.Println(itemsOnPage)
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(struct {
+	c.Send(struct {
 		pageIndex int
 		pageSize int
 		totalItems int
@@ -73,10 +65,10 @@ func Items(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func ItemById(w http.ResponseWriter, r *http.Request) {
-	id, err :=  strconv.Atoi(r.URL.Query().Get("id"))
+func ItemById(c *fiber.Ctx) {
+	id, err :=  strconv.Atoi(c.Params("id"))
 	if err != nil {
-		badRequest(w)
+		c.Next(err)
 		return
 	}
 
@@ -88,38 +80,33 @@ func ItemById(w http.ResponseWriter, r *http.Request) {
 
 	product.FillProductUrl("base url")
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(product)
+	c.Send(product)
 }
 
-func ItemsWithName(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	pageSize,err := strconv.Atoi(r.URL.Query().Get("pageSize"))
+func ItemsWithName(c *fiber.Ctx) {
+	pageSize,err := strconv.Atoi(c.Query("pageSize","10"))
 	if err !=nil{
 		log.Fatalln(err)
-		badRequest(w)
+		c.Next(err)
 		return
 	}
 
-	pageIndex, err := strconv.Atoi(r.URL.Query().Get("pageIndex"))
+	pageIndex, err := strconv.Atoi(c.Query("pageIndex","0"))
 	if err !=nil{
 		log.Fatalln(err)
-		badRequest(w)
+		c.Next(err)
 		return
 	}
 
 	db:= connectDbHandler()
 
 	totalItems := 0
-	db.Model(&models.ProductItem{}).Where("name LIKE %?",vars["name"]).Count(totalItems)
+	db.Model(&models.ProductItem{}).Where("name LIKE %?%",c.Params("name")).Count(&totalItems)
 
 	var itemsOnPage []models.ProductItem
-	db.Model(&models.ProductItem{}).Order("name asc").Offset(pageIndex * pageSize).Limit(pageSize).Find(itemsOnPage)
+	db.Model(&models.ProductItem{}).Where("name LIKE %?%",c.Params("name")).Order("name asc").Offset(pageIndex * pageSize).Limit(pageSize).Find(&itemsOnPage)
 
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(struct {
+	c.Send(struct {
 		pageIndex int
 		pageSize int
 		totalItems int
@@ -132,38 +119,34 @@ func ItemsWithName(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func ItemsByTypeIdAndBrandId(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
+func ItemsByTypeIdAndBrandId(c *fiber.Ctx) {
+
 }
 
-func ItemsByBrandId(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
+func ItemsByBrandId(c *fiber.Ctx) {
+
 }
 
-func ProductTypes(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
+func ProductTypes(c *fiber.Ctx) {
+
 }
 
-func ProductBrands(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
+func ProductBrands(c *fiber.Ctx) {
+
 }
 
-func UpdateProduct(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
+func UpdateProduct(c *fiber.Ctx) {
+
 }
 
-func CreateProduct(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
+func CreateProduct(c *fiber.Ctx) {
+
 }
 
-func DeleteProduct(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
+func DeleteProduct(c *fiber.Ctx) {
+
 }
 
-func badRequest(w http.ResponseWriter){
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusBadRequest)
-}
 
 func connectDbHandler() *gorm.DB{
 	db, err := gorm.Open("postgres","host=0.0.0.0 port=5432 user=postgres dbname=ogani password=postgres sslmode=disable")
