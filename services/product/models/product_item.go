@@ -14,9 +14,9 @@ type ProductItem struct {
 	PictureFileName   string `gorm:"not null"`
 	PictureUri        string `gorm:"not null"`
 	ProductTypeId     int `gorm:"not null"`
-	ProductType       ProductType `gorm:"not null;association_autoupdate:false;association_autocreate:false"`
+	ProductType       ProductType `gorm:"not null;association_autoupdate:false;association_autocreate:false;foreignkey:ProductTypeId"`
 	ProductBrandId     int `gorm:"not null"`
-	ProductBrand      ProductBrand `gorm:"not null;association_autoupdate:false;association_autocreate:false"`
+	ProductBrand      ProductBrand `gorm:"not null;association_autoupdate:false;association_autocreate:false;foreignkey:ProductBrandId"`
 	AvailableStock    int `gorm:"not null"`
 	RestockThreshold  int `gorm:"not null"`
 	MaxStockThreshold int `gorm:"not null"`

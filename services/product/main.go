@@ -8,6 +8,7 @@ import (
 	"net/http"
 	productController "ogani.com/services/product/controllers/product"
 	"os"
+	"strconv"
 	"sync"
 
 	"github.com/gorilla/mux"
@@ -67,10 +68,9 @@ func seedData(db *gorm.DB){
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
-		var spType models.ProductType
-		db.Model(&models.ProductType{}).First(&spType)
-		if (spType == models.ProductType{}) {
-			// import sample data
+		var count int
+		db.Model(&models.ProductType{}).Count(&count)
+		if count == 0 {
 			fmt.Println("import sample ProductType data")
 			seedProductTypes(db)
 		}
@@ -78,10 +78,9 @@ func seedData(db *gorm.DB){
 	}()
 	
 	go func() {
-		var spBrand models.ProductBrand
-		db.Model(&models.ProductBrand{}).First(&spBrand)
-		if (spBrand == models.ProductBrand{}) {
-			// import sample data
+		var count int
+		db.Model(&models.ProductBrand{}).Count(&count)
+		if count == 0 {
 			fmt.Println("import sample ProductBrand data")
 			seedProductBrands(db)
 		}
@@ -89,13 +88,16 @@ func seedData(db *gorm.DB){
 	}()
 	wg.Wait()
 
-	var spProduct models.ProductItem
-	db.Model(&models.ProductItem{}).First(&spProduct)
-	if (spProduct == models.ProductItem{}) {
-		// import sample data
+	var wgpd sync.WaitGroup
+	wgpd.Add(1)
+	var count int
+	db.Model(&models.ProductItem{}).Count(&count)
+	if count == 0 {
 		fmt.Println("import sample ProductItem data")
 		seedProductItems(db)
+		wgpd.Done()
 	}
+	wgpd.Wait()
 }
 
 func seedProductTypes(db *gorm.DB){
@@ -145,19 +147,37 @@ func readProductBrandsCSV(db *gorm.DB){
 }
 
 func readProductItemsCSV(db *gorm.DB){
-	fmt.Println(db)
-	//f, err := os.Open("/data-sample/ProductItems.csv")
-	//if err != nil {
-	//	panic(err)
-	//}
-	//r := csv.NewReader(f)
-	//for {
-	//	record, err := r.Read()
-	//	if err == io.EOF {
-	//		break
-	//	}
-	//	db.Model(&models.ProductItem{}).Create(models.ProductItem{
-	//
-	//	})
-	//}
+	f, err := os.Open("./data-sample/ProductItems.csv")
+	if err != nil {
+		panic(err)
+	}
+	r := csv.NewReader(f)
+	for {
+		record, err := r.Read()
+		if err == io.EOF {
+			break
+		}
+
+		var tp models.ProductType
+		db.Model(&models.ProductType{}).Where("type = ?",record[0]).First(&tp)
+
+		var brand models.ProductBrand
+		db.Model(&models.ProductBrand{}).Where("brand = ?",record[1]).First(&brand)
+
+		price,_ := strconv.ParseFloat(record[4],32)
+		as , _ := strconv.Atoi(record[6])
+		or,_ := strconv.ParseBool(record[7])
+		db.Model(&models.ProductItem{}).Create(&models.ProductItem{
+			ProductBrandId: int(brand.ID),
+			ProductBrand: brand,
+			ProductTypeId: int(tp.ID),
+			ProductType: tp,
+			Description: record[2],
+			Name: record[3],
+			Price: float32(price),
+			PictureFileName: record[5],
+			AvailableStock: as,
+			OnReorder: or,
+		})
+	}
 }
