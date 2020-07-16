@@ -21,7 +21,7 @@ import (
 )
 
 func init() {
-	db, err := gorm.Open("postgres", "host=0.0.0.0 port=5432 user=postgres dbname=ogani password=postgres sslmode=disable")
+	db, err := gorm.Open("postgres", "host=product-pg port=5444 user=postgres dbname=ogani_product password=postgres sslmode=disable")
 	defer db.Close()
 	db.AutoMigrate(&models.ProductType{}, &models.ProductItem{}, &models.ProductBrand{})
 	seedData(db)

@@ -11,11 +11,27 @@ services:
         # If the container goes down, it will restart
         restart: "always"
         # Connects the API to a common ogani.network bridge
+        depends_on:
+            - product-pg
         networks: 
             - "ogani.network"
         # Starts up 5 replicas of the same image
         deploy:
             replicas: 5
+
+    # postgres container
+    product-pg:
+        # specifies the latest postgres image
+        image: postgres:latest
+        ports:
+            - "5432:5444"
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: ogani_product
+        # Connects the API to a common ogani.network bridge
+        networks:
+            - "ogani.network"
     
     webmvc:
         # It will look for a dockerfile in the project root and build it
@@ -44,7 +60,7 @@ services:
             - product-api
         # Connects the port 80 of the nginx container to localhost:80 or localhost
         ports:
-            - "80:80"
+            - "80:8100"
         networks: 
             - "ogani.network"
 # declares network used to connect all the apps
