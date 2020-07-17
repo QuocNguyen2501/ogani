@@ -1,11 +1,19 @@
 package main
 
 import (
-	"net/http"
 	"github.com/gorilla/mux"
+	"net/http"
+
 	"path/filepath"
 
 	"ogani.com/webmvc/controllers/blog"
+	"ogani.com/webmvc/controllers/blog-details"
+	"ogani.com/webmvc/controllers/cart"
+	"ogani.com/webmvc/controllers/checkout"
+	"ogani.com/webmvc/controllers/contact"
+	"ogani.com/webmvc/controllers/home"
+	"ogani.com/webmvc/controllers/product-details"
+	"ogani.com/webmvc/controllers/products"
 )
 
 var files []string
