@@ -3,7 +3,7 @@
 This project is used for learning, it follows eShopOnContainers architecture and a lot of technicals that eShopOnContainers is using or other similar.
 Cross-platform Golang sample microservices and container based application that runs on Linux Windows and macOS. Powered by Golang 1.14, Docker Containers and Amazon Elastic Kubernetes Service.
 
-![alt text](https://github.com/QuocNguyen2501/ogani/tree/develop/ogani-webmvc-app-screenshot.PNG?raw=true)
+![alt text](https://raw.githubusercontent.com/QuocNguyen2501/ogani/develop/ogani-webmvc-app-screenshot.PNG)
 
 Inspired by eShopOnContainers: https://github.com/dotnet-architecture/eShopOnContainers
 
