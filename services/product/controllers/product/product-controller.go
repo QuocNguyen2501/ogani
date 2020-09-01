@@ -3,6 +3,8 @@ package productController
 import (
 	"github.com/gofiber/fiber"
 	"github.com/jinzhu/gorm"
+	"github.com/spf13/cast"
+	"github.com/spf13/viper"
 	"log"
 	"ogani.com/services/product/models"
 	"strconv"
@@ -119,8 +121,52 @@ func ItemsWithName(c *fiber.Ctx) {
 	})
 }
 
+// Items godoc
+// @Summary Get all catalogs
+// @Description Get all catalogs by type and brand
+// @Accept json
+// @Produce json
+// @Param  pageSize query int true "it's page size"
+// @Param  pageIndex query int true "it's page index"
+// @Success 200
+// @BadRequest 400
+// @Router /product/items/type/{catalogTypeId}/brand/{catalogBrandId}
 func ItemsByTypeIdAndBrandId(c *fiber.Ctx) {
+	pageSize,err := strconv.Atoi(c.Query("pageSize","10"))
+	if err !=nil{
+		log.Fatalln(err)
+		c.Next(err)
+		return
+	}
 
+	pageIndex, err := strconv.Atoi(c.Query("pageIndex","0"))
+	if err !=nil{
+		log.Fatalln(err)
+		c.Next(err)
+		return
+	}
+	db:= connectDbHandler()
+
+	var itemsOnPage []models.ProductItem
+	query:= db.Model(&models.ProductItem{}).Where("catalogTypeId = ?", c.Params("catalogTypeId"))
+
+	if c.Params("catalogBrandId") != "" {
+		query.Where("catalogBrandId = ?", c.Params("catalogBrandId"))
+	}
+	var totalItems int
+	query.Count(&totalItems)
+	query.Offset(pageIndex * pageSize).Limit(pageSize).Find(&itemsOnPage)
+	c.Send(struct {
+		pageIndex int
+		pageSize int
+		totalItems int
+		itemsOnPage []models.ProductItem
+	}{
+		pageIndex: pageIndex,
+		pageSize: pageSize,
+		totalItems: totalItems,
+		itemsOnPage: itemsOnPage,
+	})
 }
 
 func ItemsByBrandId(c *fiber.Ctx) {
@@ -149,9 +195,25 @@ func DeleteProduct(c *fiber.Ctx) {
 
 
 func connectDbHandler() *gorm.DB{
-	db, err := gorm.Open("postgres","host=0.0.0.0 port=5432 user=postgres dbname=ogani password=postgres sslmode=disable")
+	db, err := gorm.Open(cast.ToString(viper.Get("dbDialect")), viper.Get(cast.ToString("connStr")))
 	if err != nil{
 		panic(err)
 	}
+
 	return db
+}
+
+type ProductItemDTO struct {
+	ID        			uint
+	Name              string
+	Description       string
+	Price             float32
+	PictureFileName   string
+	PictureUri        string
+	ProductTypeId     int
+	ProductBrandId     int
+	AvailableStock    int
+	RestockThreshold  int
+	MaxStockThreshold int
+	OnReorder         bool
 }

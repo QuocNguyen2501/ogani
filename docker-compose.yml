@@ -3,6 +3,8 @@ version: '3.3'
 services: 
     # product is the container name for our Go API
     product-api:
+        environment:
+            - GO_ENV=development
         # It will look for a dockerfile in the project root and build it
         build: "./services/product"
         # Exposes the port 5000 from a container and binds it to a random port

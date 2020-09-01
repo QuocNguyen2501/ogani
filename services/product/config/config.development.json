@@ -1,0 +1,5 @@
+{
+  "port": ":5000",
+  "dbDialect": "postgres",
+  "connStr" : "host=localhost port=5432 user=postgres dbname=ogani_product password=postgres sslmode=disable"
+}
