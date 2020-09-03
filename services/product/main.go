@@ -50,24 +50,22 @@ func init() {
 // @BasePath /api/v1
 func main() {
 	app := fiber.New()
-	app.Use(func(c *fiber.Ctx){
-		c.Set("Content-Type","application/json")
-		c.Next()
-	})
 
 	api := app.Group("/api", cors.New())
-	api.Get("/v1/product/items", productController.Items)
-	api.Get("/v1/product/items:id", productController.ItemById)
-	api.Get("/v1/product/items/withname/:name", productController.ItemsWithName)
-	api.Get("/v1/product/items/type/:catalogTypeId/brand/:catalogBrandId", productController.ItemsByTypeIdAndBrandId)
-	api.Get("/v1/product/items/type/all/brand/:catalogBrandId", productController.ItemsByBrandId)
-	api.Get("/v1/product/catalogtypes", productController.ProductTypes)
-	api.Get("/v1/product/catalogbrands", productController.ProductBrands)
-	api.Put("/v1/product/items", productController.UpdateProduct)
-	api.Post("/v1/product/items", productController.CreateProduct)
-	api.Delete("/v1/product/:id", productController.DeleteProduct)
 
-	app.Use("/swagger", swagger.Handler)
+	v1 := api.Group("/v1")
+	v1.Get("/product/items", productController.Items)
+	v1.Get("/product/items/:id", productController.ItemById)
+	v1.Get("/product/items/withname/:name", productController.ItemsWithName)
+	v1.Get("/product/items/type/:catalogTypeId/brand/:catalogBrandId", productController.ItemsByTypeIdAndBrandId)
+	v1.Get("/product/items/type/all/brand/:catalogBrandId", productController.ItemsByBrandId)
+	v1.Get("/product/catalogtypes", productController.ProductTypes)
+	v1.Get("/product/catalogbrands", productController.ProductBrands)
+	v1.Put("/product/items", productController.UpdateProduct)
+	v1.Post("/product/items", productController.CreateProduct)
+	v1.Delete("/product/:id", productController.DeleteProduct)
+
+	v1.Use("/swagger", swagger.Handler)
 
 	log.Fatal(app.Listen(cast.ToString(viper.Get("port"))))
 }
@@ -124,6 +122,7 @@ func seedProductItems(db *gorm.DB){
 
 func readProductTypesCSV(db *gorm.DB){
 	f, err := os.Open("./data-sample/ProductTypes.csv")
+	f.Close()
 	if err != nil {
 		panic(err)
 	}
@@ -141,6 +140,7 @@ func readProductTypesCSV(db *gorm.DB){
 
 func readProductBrandsCSV(db *gorm.DB){
 	f, err := os.Open("./data-sample/ProductBrands.csv")
+	defer f.Close()
 	if err != nil {
 		panic(err)
 	}
@@ -158,6 +158,7 @@ func readProductBrandsCSV(db *gorm.DB){
 
 func readProductItemsCSV(db *gorm.DB){
 	f, err := os.Open("./data-sample/ProductItems.csv")
+	defer f.Close()
 	if err != nil {
 		panic(err)
 	}

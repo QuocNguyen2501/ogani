@@ -6,9 +6,18 @@ import (
 	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 	"log"
+	"ogani.com/services/product/controllers/product/dto-models"
 	"ogani.com/services/product/models"
 	"strconv"
 )
+
+type ResponseData struct {
+	PageIndex   int         `json:"page_index"`
+	PageSize    int         `json:"page_size"`
+	TotalItems  int         `json:"total_items"`
+	ItemsOnPage interface{} `json:"items_on_page"`
+}
+
 
 // Items godoc
 // @Summary Get all catalogs
@@ -21,19 +30,7 @@ import (
 // @BadRequest 400
 // @Router /product/items [get]
 func Items(c *fiber.Ctx) {
-	pageSize,err := strconv.Atoi(c.Query("pageSize","10"))
-	if err !=nil{
-		log.Fatalln(err)
-		c.Next(err)
-		return
-	}
-
-	pageIndex, err := strconv.Atoi(c.Query("pageIndex","0"))
-	if err !=nil{
-		log.Fatalln(err)
-		c.Next(err)
-		return
-	}
+	pageSize, pageIndex := getPageSizePageIndex(c)
 
 	db := connectDbHandler()
 	defer db.Close()
@@ -52,19 +49,22 @@ func Items(c *fiber.Ctx) {
 	}()
 
 	totalItems := <-totalItemsCh
-	itemsOnPage := <- itemsOnPageCh
 
-	c.Send(struct {
-		pageIndex int
-		pageSize int
-		totalItems int
-		itemsOnPage []models.ProductItem
-	}{
-		pageIndex: pageIndex,
-		pageSize: pageSize,
-		totalItems: totalItems,
-		itemsOnPage: itemsOnPage,
-	})
+	var productItemDTOModels []dto_models.ProductItemDTOModel
+	for _,item := range <- itemsOnPageCh{
+		var dto  dto_models.ProductItemDTOModel
+		dto.ConvertFromProductItem2DTOModel(&item)
+		productItemDTOModels = append(productItemDTOModels,dto)
+	}
+
+	responseData := ResponseData{
+		PageIndex:   pageIndex,
+		PageSize:    pageSize,
+		TotalItems:  totalItems,
+		ItemsOnPage: productItemDTOModels,
+	}
+
+	c.JSON(responseData)
 }
 
 func ItemById(c *fiber.Ctx) {
@@ -82,42 +82,46 @@ func ItemById(c *fiber.Ctx) {
 
 	product.FillProductUrl("base url")
 
-	c.Send(product)
+	var productDTO dto_models.ProductItemDTOModel
+	productDTO.ConvertFromProductItem2DTOModel(&product)
+
+	c.JSON(productDTO)
 }
 
 func ItemsWithName(c *fiber.Ctx) {
-	pageSize,err := strconv.Atoi(c.Query("pageSize","10"))
-	if err !=nil{
-		log.Fatalln(err)
-		c.Next(err)
-		return
-	}
-
-	pageIndex, err := strconv.Atoi(c.Query("pageIndex","0"))
-	if err !=nil{
-		log.Fatalln(err)
-		c.Next(err)
-		return
-	}
+	pageSize, pageIndex := getPageSizePageIndex(c)
 
 	db:= connectDbHandler()
+	defer db.Close()
 
-	totalItems := 0
-	db.Model(&models.ProductItem{}).Where("name LIKE %?%",c.Params("name")).Count(&totalItems)
+	query := db.Model(&models.ProductItem{}).Where("name LIKE %?%", c.Params("name"))
+	totalChan := make(chan int,1)
+	go func() {
+		totalItems := 0
+		query.Count(&totalItems)
+		totalChan <- totalItems
+	}()
 
-	var itemsOnPage []models.ProductItem
-	db.Model(&models.ProductItem{}).Where("name LIKE %?%",c.Params("name")).Order("name asc").Offset(pageIndex * pageSize).Limit(pageSize).Find(&itemsOnPage)
+	itemsChan := make(chan []models.ProductItem)
+	go func(){
+		var itemsOnPage []models.ProductItem
+		query.Order("name asc").Offset(pageIndex * pageSize).Limit(pageSize).Find(&itemsOnPage)
+		itemsChan <- itemsOnPage
+	}()
 
-	c.Send(struct {
-		pageIndex int
-		pageSize int
-		totalItems int
-		itemsOnPage []models.ProductItem
-	}{
-		pageIndex: pageIndex,
-		pageSize: pageSize,
-		totalItems: totalItems,
-		itemsOnPage: itemsOnPage,
+	var productItemDTOModels []dto_models.ProductItemDTOModel
+	for _,item := range <-itemsChan {
+		var dto  dto_models.ProductItemDTOModel
+		dto.ConvertFromProductItem2DTOModel(&item)
+		productItemDTOModels = append(productItemDTOModels,dto)
+	}
+
+
+	c.JSON(ResponseData {
+		PageIndex:   pageIndex,
+		PageSize:    pageSize,
+		TotalItems:  <-totalChan,
+		ItemsOnPage: productItemDTOModels,
 	})
 }
 
@@ -132,45 +136,89 @@ func ItemsWithName(c *fiber.Ctx) {
 // @BadRequest 400
 // @Router /product/items/type/{catalogTypeId}/brand/{catalogBrandId}
 func ItemsByTypeIdAndBrandId(c *fiber.Ctx) {
-	pageSize,err := strconv.Atoi(c.Query("pageSize","10"))
-	if err !=nil{
-		log.Fatalln(err)
-		c.Next(err)
-		return
-	}
+	pageSize, pageIndex := getPageSizePageIndex(c)
 
-	pageIndex, err := strconv.Atoi(c.Query("pageIndex","0"))
-	if err !=nil{
-		log.Fatalln(err)
-		c.Next(err)
-		return
-	}
 	db:= connectDbHandler()
+	defer db.Close()
 
-	var itemsOnPage []models.ProductItem
-	query:= db.Model(&models.ProductItem{}).Where("catalogTypeId = ?", c.Params("catalogTypeId"))
+	query:= db.Model(&models.ProductItem{})
+	if c.Params("catalogTypeId") != ""{
+		query.Where("catalogTypeId = ?", c.Params("catalogTypeId"))
+	}
 
 	if c.Params("catalogBrandId") != "" {
 		query.Where("catalogBrandId = ?", c.Params("catalogBrandId"))
 	}
-	var totalItems int
-	query.Count(&totalItems)
-	query.Offset(pageIndex * pageSize).Limit(pageSize).Find(&itemsOnPage)
-	c.Send(struct {
-		pageIndex int
-		pageSize int
-		totalItems int
-		itemsOnPage []models.ProductItem
-	}{
-		pageIndex: pageIndex,
-		pageSize: pageSize,
-		totalItems: totalItems,
-		itemsOnPage: itemsOnPage,
+
+	totalItemsChan := make(chan int)
+	go func(){
+		var totalItems int
+		query.Count(&totalItems)
+		totalItemsChan <- totalItems
+	}()
+
+	itemsOnPageCh := make(chan []models.ProductItem)
+
+	go func(){
+		var itemsOnPage []models.ProductItem
+		query.Offset(pageIndex * pageSize).Limit(pageSize).Find(&itemsOnPage)
+		itemsOnPageCh <- itemsOnPage
+	}()
+
+	var productItemDTOModels []dto_models.ProductItemDTOModel
+	for _,item := range <- itemsOnPageCh{
+		var dto  dto_models.ProductItemDTOModel
+		dto.ConvertFromProductItem2DTOModel(&item)
+		productItemDTOModels = append(productItemDTOModels,dto)
+	}
+
+	c.JSON(ResponseData{
+		PageIndex:   pageIndex,
+		PageSize:    pageSize,
+		TotalItems:  <- totalItemsChan,
+		ItemsOnPage: productItemDTOModels,
 	})
 }
 
 func ItemsByBrandId(c *fiber.Ctx) {
+	pageSize, pageIndex := getPageSizePageIndex(c)
 
+	db:= connectDbHandler()
+	defer db.Close()
+
+	query:= db.Model(&models.ProductItem{})
+	if c.Params("catalogBrandId") != "" {
+		query.Where("catalogBrandId = ?", c.Params("catalogBrandId"))
+	}
+
+	totalItemsChan := make(chan int)
+	go func(){
+		var totalItems int
+		query.Count(&totalItems)
+		totalItemsChan <- totalItems
+	}()
+
+	itemsOnPageCh := make(chan []models.ProductItem)
+
+	go func(){
+		var itemsOnPage []models.ProductItem
+		query.Offset(pageIndex * pageSize).Limit(pageSize).Find(&itemsOnPage)
+		itemsOnPageCh <- itemsOnPage
+	}()
+
+	var productItemDTOModels []dto_models.ProductItemDTOModel
+	for _,item := range <- itemsOnPageCh{
+		var dto  dto_models.ProductItemDTOModel
+		dto.ConvertFromProductItem2DTOModel(&item)
+		productItemDTOModels = append(productItemDTOModels,dto)
+	}
+
+	c.JSON(ResponseData{
+		PageIndex:   pageIndex,
+		PageSize:    pageSize,
+		TotalItems:  <- totalItemsChan,
+		ItemsOnPage: productItemDTOModels,
+	})
 }
 
 func ProductTypes(c *fiber.Ctx) {
@@ -203,17 +251,19 @@ func connectDbHandler() *gorm.DB{
 	return db
 }
 
-type ProductItemDTO struct {
-	ID        			uint
-	Name              string
-	Description       string
-	Price             float32
-	PictureFileName   string
-	PictureUri        string
-	ProductTypeId     int
-	ProductBrandId     int
-	AvailableStock    int
-	RestockThreshold  int
-	MaxStockThreshold int
-	OnReorder         bool
+func getPageSizePageIndex(c *fiber.Ctx) (pageSize, pageIndex int) {
+	pageSize,err := strconv.Atoi(c.Query("pageSize","10"))
+	if err !=nil{
+		log.Fatalln(err)
+		c.Next(err)
+		return
+	}
+
+	pageIndex, err = strconv.Atoi(c.Query("pageIndex","0"))
+	if err !=nil{
+		log.Fatalln(err)
+		c.Next(err)
+		return
+	}
+	return
 }

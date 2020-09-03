@@ -19,6 +19,6 @@ require (
 	github.com/valyala/fasthttp v1.15.0 // indirect
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381 // indirect
 	golang.org/x/text v0.3.3 // indirect
-	golang.org/x/tools v0.0.0-20200714190737-9048b464a08d // indirect
+	golang.org/x/tools v0.0.0-20200714190737-9048b464a08d
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
