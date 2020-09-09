@@ -1,4 +1,4 @@
-package productHandler
+package product
 
 import (
 	"github.com/gofiber/fiber"
@@ -142,42 +142,6 @@ func (ph *ProductHandler) ItemsByBrandId(c *fiber.Ctx) {
 		TotalItems:  totalItems,
 		ItemsOnPage: productItemDTOModels,
 	})
-}
-
-func (ph *ProductHandler) ProductTypes(c *fiber.Ctx) {
-	productTypes := ph.productTypeService.GetAll()
-
-	type ProductTypeDTO struct {
-		Id uint `json:"id"`
-		Type string `json:"type"`
-	}
-
-	var productTypeDTOs []ProductTypeDTO
-	for _,item := range productTypes{
-		productTypeDTOs = append(productTypeDTOs, ProductTypeDTO{
-			Id: item.ID,
-			Type: item.Type,
-		})
-	}
-
-	c.JSON(productTypeDTOs)
-}
-
-func (ph *ProductHandler) ProductBrands(c *fiber.Ctx) {
-	productBrands := ph.productBrandService.GetAll()
-
-	type ProductBrandDTO struct {
-		Id uint `json:"id"`
-		Brand string `json:"brand"`
-	}
-	var productBrandDTOs []ProductBrandDTO
-	for _,item := range productBrands {
-		productBrandDTOs = append(productBrandDTOs,ProductBrandDTO{
-			Id: item.ID,
-			Brand: item.Brand,
-		})
-	}
-	c.JSON(productBrandDTOs)
 }
 
 func (ph *ProductHandler) UpdateProduct(c *fiber.Ctx) {
